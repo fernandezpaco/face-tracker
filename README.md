@@ -3,10 +3,11 @@ web component to check if there is a face detected by the camera. Wrapper of js-
 
 It takes a videoElement as input and returns a boolean value depending on if a face has been detected
 
+You can use the debouncesecs property to avoid false positives
 ```html
 
 <video-camera videoelement="{{video}}"></video-camera>
-<face-tracker video="{{video}}" detected="{{detect}}"></face-tracker>
+<face-tracker video="{{video}}" detected="{{detect}}" debouncesecs="2"></face-tracker>
 <br>
 Detected: {{detect}}
 
