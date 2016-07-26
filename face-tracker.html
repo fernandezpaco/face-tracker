@@ -17,13 +17,14 @@ Polymer({
             type: Boolean,
             value: false,
             notify: true
-        }
+        },
+        debouncesecs: 0
     },
     ready: function(){
 
-        var me=this, detector;
+        var me=this, detector, debouncefalses=0;;
 
-         window.requestAnimationFrame(play);
+        window.requestAnimationFrame(play);
 
         function play() {
             window.requestAnimationFrame(function(){
@@ -40,8 +41,12 @@ Polymer({
                     var coords = detector.detect(me.video, 1);
                     if (coords[0]) {
                         me.detected=true;
+                        debouncefalses=0;
                     }else{
-                        me.detected=false;
+                        debouncefalses++;
+                        if(debouncefalses>=10*me.debouncesecs)
+                            me.detected=false;
+                        
                     }
 
                 }
