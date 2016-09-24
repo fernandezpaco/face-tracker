@@ -18,9 +18,12 @@ Polymer({
             value: false,
             notify: true
         },
-        debouncesecs: 0
+        debouncesecs: {
+            type: Number,
+            value: 0
+        }
     },
-    ready: function(){
+    attached: function(){
 
         var me=this, detector, debouncefalses=0;;
 
