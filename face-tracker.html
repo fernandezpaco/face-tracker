@@ -21,7 +21,11 @@ Polymer({
         debouncesecs: {
             type: Number,
             value: 0
-        }
+        },
+        captureintervaltime: {
+            type: Number,
+            value: 100
+        },
     },
     attached: function(){
 
@@ -47,14 +51,14 @@ Polymer({
                         debouncefalses=0;
                     }else{
                         debouncefalses++;
-                        if(debouncefalses>=10*me.debouncesecs)
+                        if(debouncefalses>=(1000/me.captureintervaltime)*me.debouncesecs)
                             me.detected=false;
                         
                     }
 
                 }
 
-                setTimeout(play, 100);
+                setTimeout(play, me.captureintervaltime);
             });
         }
     }
