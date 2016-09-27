@@ -18,7 +18,7 @@
 <template is="dom-bind">
 
 <video-camera videoelement="{{video}}"></video-camera>
-<face-tracker video="{{video}}" detected="{{detect}}" debouncesecs="2" captureintervaltime="300"></face-tracker>
+<face-tracker video="{{video}}" detected="{{detect}}" debouncesecs="0" captureintervaltime="100" showcoords="true"></face-tracker>
 <br>
 Detected: {{detect}}
 

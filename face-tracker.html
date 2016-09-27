@@ -1,10 +1,14 @@
 <link rel="import" href="../polymer/polymer.html">
 <script src="../js-objectdetect/js/objectdetect.js"></script>
+<script src="../js-objectdetect/js/objectdetect.profileface.js"></script>
+<script src="../js-objectdetect/js/objectdetect.fullbody.js"></script>
 <script src="../js-objectdetect/js/objectdetect.frontalface.js"></script>
+<script src="../js-objectdetect/js/objectdetect.frontalface_alt.js"></script>
 
 
 <dom-module id="face-tracker">
 <template>
+<div id="marker" style="position:absolute;border-color: red;z-index:9999;border-style: solid;border-size: 1px;"></div>
 </template>
 <script>
 Polymer({
@@ -18,6 +22,14 @@ Polymer({
             value: false,
             notify: true
         },
+        auto: {
+            type: Boolean,
+            value: true
+        },
+        showcoords: {
+            type: Boolean,
+            value: false
+        },
         debouncesecs: {
             type: Number,
             value: 0
@@ -26,40 +38,94 @@ Polymer({
             type: Number,
             value: 100
         },
+        ratio: {
+            type: Number,
+            value: 4
+        },
+        detectors: {
+            type: Array,
+            value: ['frontal','frontal_alt']
+        }
     },
+
     attached: function(){
+        var me=this;
+        this.debouncefalses=0;;
+        this.detector=[];
+        this.consecutives=0;
 
-        var me=this, detector, debouncefalses=0;;
+        if(this.auto){
+            window.requestAnimationFrame(play);
+            function play() {
+                window.requestAnimationFrame(function(){
+                    me.detect();
+                    setTimeout(play, me.captureintervaltime);
+                });
+            }
+        }
+    },
 
-        window.requestAnimationFrame(play);
+    detect: function(){
+        if (this.video && this.video.paused) this.video.play();
 
-        function play() {
-            window.requestAnimationFrame(function(){
-                if (me.video && me.video.paused) me.video.play();
-
-                if (me.video && me.video.readyState === me.video.HAVE_ENOUGH_DATA && me.video.videoWidth > 0) {
-                    if (!detector) {
-                        var width = ~~(60 * me.video.clientWidth / me.video.clientHeight);
-                        var height  =60;
-                        detector = new objectdetect.detector(width, height, 1.1, objectdetect.frontalface);
-                    }
-
-                    // Perform the actual detection:
-                    var coords = detector.detect(me.video, 1);
-                    if (coords[0]) {
-                        me.detected=true;
-                        debouncefalses=0;
-                    }else{
-                        debouncefalses++;
-                        if(debouncefalses>=(1000/me.captureintervaltime)*me.debouncesecs)
-                            me.detected=false;
-                        
-                    }
-
+        if (this.video && this.video.readyState === this.video.HAVE_ENOUGH_DATA && this.video.videoWidth > 0) {
+            if (!this.detector || this.detector.length<1) {
+                var width = ~~(60 * this.video.clientWidth / this.video.clientHeight);
+                var height  =60;
+                for(i=0;i<this.detectors.length;i++){
+                    //this.detector.push(new objectdetect.detector(width, height, 1.1, objectdetect.frontalface));
+                    if(this.detectors[i]=='frontal')
+                        this.detector.push(new objectdetect.detector(width, height, 1.1, objectdetect.frontalface));
+                    else if(this.detectors[i]=='frontal_alt')
+                        this.detector.push(new objectdetect.detector(width, height, 1.1, objectdetect.frontalface_alt));
+                    else if(this.detectors[i]=='profile')
+                        this.detector.push(new objectdetect.detector(width, height, 1.1, objectdetect.profileface));
                 }
+            }
 
-                setTimeout(play, me.captureintervaltime);
-            });
+            var tempdectected=false;
+            // Perform the actual detection:
+            for(i=0;i<this.detector.length;i++){
+                var coords = this.detector[i].detect(this.video, 1);
+                if (coords[0]) {
+                    //console.log('Detected by '+this.detectors[i]);
+                    this.consecutives++;
+                    this.debouncefalses=0;
+
+                    if(this.consecutives>=this.ratio){
+                        this.detected=true;                    
+                        tempdectected=true;
+
+
+                        if(this.showcoords){
+                            coords=coords[0];
+                            coords[0] *= this.video.clientWidth/this.detector[i].canvas.width;
+                            coords[1] *= this.video.clientHeight/this.detector[i].canvas.height;
+                            coords[2] *= this.video.clientWidth/this.detector[i].canvas.width;
+                            coords[3] *= this.video.clientHeight/this.detector[i].canvas.height;
+
+                            //this.$.marker.style.left=~~(coords[0]+coords[2])+'px';
+                            this.$.marker.style.display='block';
+                            this.$.marker.style.left=~~(coords[0]+this.video.offsetLeft)+'px';
+                            this.$.marker.style.top=~~(coords[1]+ this.video.offsetTop)+'px';
+                            this.$.marker.style.width=~~(coords[2])+'px';
+                            this.$.marker.style.height=~~(coords[3])+'px';
+                            //break;
+                        }
+                    }
+                }
+            }
+            if(!tempdectected){
+                this.debouncefalses++;
+                this.consecutives=this.consecutives-this.debouncefalses;
+                if(this.consecutives<0)
+                    this.consecutives=0;
+                this.$.marker.style.display='none';
+                if(this.debouncefalses>=(1000/this.captureintervaltime)*this.debouncesecs){                    
+                    this.detected=false;
+                }
+            }
+            //console.log(this.ratio);
         }
     }
 });
