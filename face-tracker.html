@@ -158,6 +158,7 @@ Polymer({
                 }
             }
             if(!tempdectected){
+                this.detected=false;
                 this.debouncefalses++;
                 this.consecutives=this.consecutives-this.debouncefalses;
                 if(this.consecutives<0)
