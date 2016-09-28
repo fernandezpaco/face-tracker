@@ -30,6 +30,10 @@ Polymer({
             type: Boolean,
             value: false
         },
+        activated: {
+            type: Boolean,
+            value: false
+        },
         debouncesecs: {
             type: Number,
             value: 0
@@ -38,6 +42,22 @@ Polymer({
             type: Number,
             value: 100
         },
+        activationtime: {
+            type: Number,
+            value: 60000
+        },        
+        timelastdetectiondebounced: {
+            type: Number,
+            value: 0
+        }, 
+        timelastdetection: {
+            type: Number,
+            value: 0
+        }, 
+        detections: {
+            type: Number,
+            value: 0
+        },        
         ratio: {
             type: Number,
             value: 4
@@ -45,21 +65,44 @@ Polymer({
         detectors: {
             type: Array,
             value: ['frontal','frontal_alt']
-        }
+        },
+        debouncer: {
+            type: Array,
+            value: [1000,2000,5000,10000,30000,60000]
+        }        
     },
 
     attached: function(){
         var me=this;
         this.debouncefalses=0;;
         this.detector=[];
-        this.consecutives=0;
+        this.consecutives=0;         
 
         if(this.auto){
+            this.activated=true;
             window.requestAnimationFrame(play);
             function play() {
                 window.requestAnimationFrame(function(){
                     me.detect();
                     setTimeout(play, me.captureintervaltime);
+                });
+            }
+        }
+    },
+
+    activate: function(){
+        var time=Date.now();
+        var me=this;
+        if(!this.activated){
+            this.activated=true;
+            window.requestAnimationFrame(play);
+            function play() {
+                window.requestAnimationFrame(function(){
+                    me.detect();
+                    if(Date.now()<time+me.activationtime)
+                        setTimeout(play, me.captureintervaltime);
+                    else
+                        me.activated=false;
                 });
             }
         }
@@ -93,9 +136,8 @@ Polymer({
                     this.debouncefalses=0;
 
                     if(this.consecutives>=this.ratio){
-                        this.detected=true;                    
+                        //this.detected=true;                    
                         tempdectected=true;
-
 
                         if(this.showcoords){
                             coords=coords[0];
@@ -121,11 +163,22 @@ Polymer({
                 if(this.consecutives<0)
                     this.consecutives=0;
                 this.$.marker.style.display='none';
-                if(this.debouncefalses>=(1000/this.captureintervaltime)*this.debouncesecs){                    
-                    this.detected=false;
+                if(Date.now()>this.timelastdetectiondebounced+this.debouncer[this.detections]){
+                        this.detections=0;
+                }                  
+            }else{
+                this.timelastdetectiondebounced=Date.now();
+                if(Date.now()>this.timelastdetection+this.debouncer[this.detections]){
+                    this.timelastdetection=Date.now();
+                    this.detected=true;
+                    this.fire('face-detected', {
+                        desc: "face-detected ["+~~(coords[0])+","+~~(coords[1])+"]["+~~(coords[2])+","+~~(coords[3])+"]"
+                    });
+                    if(this.detections<this.debouncer.length-1)
+                        this.detections++;
+
                 }
             }
-            //console.log(this.ratio);
         }
     }
 });
